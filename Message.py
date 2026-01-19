@@ -1,7 +1,9 @@
 class MessageType:
     DECLARATION = "declaration"
     ENVOIE = "envoie"
-    RECPETION = "reception"
+    RECEPTION = "reception"
+    SYS_MESSAGE = "sys_message"
+    WARNING = "warning"
 
 class Message:
     def __init__(self, type=None, emitter=None, content=None, receiver=None):
@@ -12,7 +14,31 @@ class Message:
     
     @staticmethod
     def default_message():
-        return Message("TOTO" "System", "This is a default message", "All")
+        return Message("TOTO", "System", "This is a default message", "All")
+
+    @staticmethod
+    def sys_message(emitter, value, receiver=""):
+        return Message(MessageType.SYS_MESSAGE, emitter, value, receiver)
+
+    @staticmethod
+    def warning(emitter, value, receiver):
+        return Message(MessageType.WARNING, emitter, value, receiver)
+
+    @staticmethod
+    def reception(emitter, value, receiver):
+        return Message(MessageType.RECEPTION, emitter, value, receiver)
+
+    @staticmethod
+    def ping():
+        return Message(MessageType.SYS_MESSAGE, "SERVER", "**ping**", "")
+
+    @staticmethod
+    def pong(emitter):
+        return Message(MessageType.SYS_MESSAGE, emitter, "**pong**", "")
+
+    @staticmethod
+    def disconnect(emitter):
+        return Message(MessageType.SYS_MESSAGE, emitter, "Disconnect", "")
 
     @staticmethod
     def from_json(json_data):
