@@ -37,13 +37,13 @@ class WSClient:
         self.ws.run_forever()
 
     def send(self, content, dest):
-        message = Message(MessageType.ENVOIE, emitter="WSClient", content=content, receiver=dest)
+        message = Message(MessageType.ENVOIE, emitter=self.client_name, content=content, receiver=dest)
         self.ws.send(message.to_json())
    
 
 if __name__ == "__main__":
     name = sys.argv[1] if len(sys.argv) > 1 else "Client1"
-    client = WSClient(Context.dev(), name)
+    client = WSClient(Context.prod(), name)
 
     # Run WebSocket in background thread
     ws_thread = threading.Thread(target=client.connect, daemon=True)
