@@ -8,7 +8,7 @@ import os
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QFrame
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QPixmap, QFont
-from PyQt5.QtMultimedia import QMediaPlayer, QAudioOutput
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 
 from ..styles import COLORS, FONT_FAMILY
 
@@ -19,7 +19,6 @@ class MediaPanel(QWidget):
     def __init__(self):
         super().__init__()
         self.media_player = None
-        self.audio_output = None
         self.temp_audio_file = None
         self.is_playing = False
         self.init_ui()
@@ -185,9 +184,7 @@ class MediaPanel(QWidget):
             f.write(audio_bytes)
 
         self.media_player = QMediaPlayer()
-        self.audio_output = QAudioOutput()
-        self.media_player.setAudioOutput(self.audio_output)
-        self.media_player.setSource(QUrl.fromLocalFile(self.temp_audio_file))
+        self.media_player.setMedia(QMediaContent(QUrl.fromLocalFile(self.temp_audio_file)))
 
         self.is_playing = False
         self.play_pause_btn.setText("PLAY")
