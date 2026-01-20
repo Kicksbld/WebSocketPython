@@ -1,68 +1,53 @@
+import json
+
+class ENVOI_TYPE:
+    TEXT = "ENVOI_TEXT"
+    IMAGE = "ENVOI_IMAGE"
+    AUDIO = "ENVOI_AUDIO"
+
+class RECEPTION_TYPE:
+    TEXT = "RECEPTION_TEXT"
+    IMAGE = "RECEPTION_IMAGE"
+    AUDIO = "RECEPTION_AUDIO"
+
 class MessageType:
-    DECLARATION = "declaration"
-    ENVOIE = "envoie"
-    RECEPTION = "reception"
-    SYS_MESSAGE = "sys_message"
-    WARNING = "warning"
+    DECLARATION = "DECLARATION"
+    ENVOI = ENVOI_TYPE
+    RECEPTION = RECEPTION_TYPE
+    WARNING = "WARNING"
+    SYS_MESSAGE = "SYS_MESSAGE"
 
 class Message:
-    def __init__(self, type=None, emitter=None, content=None, receiver=None):
-        self.type = type
+    def __init__(self, message_type: MessageType, value, emitter, receiver=None):
+        self.message_type = message_type
+        self.value = value
         self.emitter = emitter
-        self.content = content
         self.receiver = receiver
-    
+
     @staticmethod
     def default_message():
-        return Message("TOTO", "System", "This is a default message", "All")
-
-    @staticmethod
-    def sys_message(emitter, value, receiver=""):
-        return Message(MessageType.SYS_MESSAGE, emitter, value, receiver)
-
-    @staticmethod
-    def warning(emitter, value, receiver):
-        return Message(MessageType.WARNING, emitter, value, receiver)
-
-    @staticmethod
-    def reception(emitter, value, receiver):
-        return Message(MessageType.RECEPTION, emitter, value, receiver)
-
-    @staticmethod
-    def ping():
-        return Message(MessageType.SYS_MESSAGE, "SERVER", "**ping**", "")
-
-    @staticmethod
-    def pong(emitter):
-        return Message(MessageType.SYS_MESSAGE, emitter, "**pong**", "")
-
-    @staticmethod
-    def disconnect(emitter):
-        return Message(MessageType.SYS_MESSAGE, emitter, "Disconnect", "")
+        return Message(MessageType.DECLARATION, "System", "This is a default message", "All")
 
     @staticmethod
     def from_json(json_data):
-        import json
         data = json.loads(json_data)
-        type = data['message_type']
+        message_type = data['message_type']
         emitter = data['data']['emitter']
-        content = data['data'].get('value', None)
         receiver = data['data'].get('receiver', None)
-        return Message(type, emitter, content, receiver)
+        value = data['data']['value']
+        return Message(message_type, value, emitter, receiver)
 
     def to_json(self):
-        import json
         data = {
-            "message_type": self.type,
-            "data": {
-                "emitter": self.emitter,
-                "receiver": self.receiver,
-                "value": self.content
+            'message_type': self.message_type,
+            'data': {
+                'emitter': self.emitter,
+                'receiver': self.receiver,
+                'value': self.value
             }
         }
+
         return json.dumps(data)
 
-
-message = Message(MessageType.DECLARATION, emitter="System", content="This is a default message", receiver="All")
+message = Message(MessageType.DECLARATION, emitter="System", receiver="All", value="This is a test message")
 messageRebuild = Message.from_json(message.to_json())
-assert message.to_json() == messageRebuild.to_json()
