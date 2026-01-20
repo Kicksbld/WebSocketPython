@@ -29,6 +29,30 @@ class Message:
         return Message(MessageType.DECLARATION, "System", "This is a default message", "All")
 
     @staticmethod
+    def reception(emitter, value, receiver):
+        return Message(MessageType.RECEPTION.TEXT, value, emitter, receiver)
+
+    @staticmethod
+    def reception_image(emitter, value, receiver):
+        return Message(MessageType.RECEPTION.IMAGE, value, emitter, receiver)
+
+    @staticmethod
+    def reception_audio(emitter, value, receiver):
+        return Message(MessageType.RECEPTION.AUDIO, value, emitter, receiver)
+
+    @staticmethod
+    def warning(emitter, value, receiver):
+        return Message(MessageType.WARNING, value, emitter, receiver)
+
+    @staticmethod
+    def sys_message(emitter, value, receiver):
+        return Message(MessageType.SYS_MESSAGE, value, emitter, receiver)
+
+    @staticmethod
+    def ping():
+        return Message(MessageType.SYS_MESSAGE, "ping", "SERVER", "")
+
+    @staticmethod
     def from_json(json_data):
         data = json.loads(json_data)
         message_type = data['message_type']
@@ -48,6 +72,3 @@ class Message:
         }
 
         return json.dumps(data)
-
-message = Message(MessageType.DECLARATION, emitter="System", receiver="All", value="This is a test message")
-messageRebuild = Message.from_json(message.to_json())
