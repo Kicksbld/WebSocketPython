@@ -280,7 +280,7 @@ class AdminClient {
     constructor(wsUrl) {
         this.wsUrl = wsUrl;
         this.ws = null;
-        this.username = 'ADMIN';
+        this.username = 'ADMIN_' + Math.random().toString(36).substring(2, 8);
         this.clients = []; // Array of {username, connected_at, last_activity, status}
         this.isConnected = false;
         this.communicationLogs = [];
