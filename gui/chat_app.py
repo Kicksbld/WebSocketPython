@@ -44,6 +44,7 @@ class ChatApp(QMainWindow):
         self.ws_thread.disconnected.connect(self.on_disconnected)
         self.ws_thread.message_received.connect(self.on_message)
         self.ws_thread.error.connect(self.on_error)
+        self.ws_thread.clients_updated.connect(self.chat_widget.update_clients_list)
 
         self.chat_widget.send_callback = self.send_text
         self.chat_widget.send_image_callback = self.send_image

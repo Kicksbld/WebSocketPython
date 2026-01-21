@@ -10,6 +10,7 @@ class WSClient:
     def __init__(self, ctx, username="Client"):
         self.username = username
         self.connected = False
+        self.connected_clients = []
         self.ws = websocket.WebSocketApp(
             ctx.url(),
             on_open=self.on_open,
@@ -27,9 +28,14 @@ class WSClient:
             ws.send(pong_msg.to_json())
             return
 
+        # Gestion de la liste des clients
+        if received_msg.message_type == MessageType.RECEPTION.CLIENT_LIST:
+            self.connected_clients = [c for c in received_msg.value if c != self.username]
+            print(f"\n[info] Clients connectés: {self.connected_clients}")
+            return
+
         # Affichage selon le type de message
         print(f"\n[{received_msg.emitter}] {received_msg.value}")
-        print(f"[{self.username}] > ", end="", flush=True)
 
         # Accusé de réception pour les messages RECEPTION
         if received_msg.message_type in [MessageType.RECEPTION.TEXT, MessageType.RECEPTION.IMAGE, MessageType.RECEPTION.AUDIO, MessageType.RECEPTION.VIDEO]:
@@ -52,43 +58,66 @@ class WSClient:
         input_thread = threading.Thread(target=self.input_loop, daemon=True)
         input_thread.start()
 
+    def select_recipient(self):
+        """Affiche un menu de sélection du destinataire"""
+        print("\n--- Choisir le destinataire ---")
+        print("0. Everyone (tous)")
+        for i, client in enumerate(self.connected_clients, 1):
+            print(f"{i}. {client}")
+        print("--------------------------------")
+
+        while True:
+            try:
+                choice = input("Numéro du destinataire (ou 'disconnect' pour quitter): ")
+                if choice.lower() == "disconnect":
+                    return None
+                choice = int(choice)
+                if choice == 0:
+                    return "ALL"
+                elif 1 <= choice <= len(self.connected_clients):
+                    return self.connected_clients[choice - 1]
+                else:
+                    print("Choix invalide")
+            except ValueError:
+                print("Entrez un numéro valide")
+
     def input_loop(self):
-        print(f"Chat démarré. Tapez 'dest:message' pour envoyer (ex: SERVER:bonjour)")
-        print(f"Tapez 'img:dest:chemin' pour envoyer une image (ex: img:Client2:/path/image.png)")
-        print(f"Tapez 'audio:dest:chemin' pour envoyer un audio (ex: audio:Client2:/path/audio.mp3)")
-        print(f"Tapez 'disconnect' pour quitter.\n")
+        print(f"\nChat démarré en tant que '{self.username}'")
+        print("Commandes spéciales: 'disconnect', 'img:dest:chemin', 'audio:dest:chemin', 'video:dest:chemin'\n")
+
         while self.connected:
             try:
-                print(f"[{self.username}] > ", end="", flush=True)
-                user_input = input()
-                if user_input.lower() == "disconnect":
+                dest = self.select_recipient()
+
+                if dest is None:
                     disconnect_msg = Message(MessageType.SYS_MESSAGE, emitter=self.username, receiver="", value="Disconnect")
                     self.ws.send(disconnect_msg.to_json())
                     self.ws.close()
                     break
-                if user_input.lower().startswith("img:"):
-                    parts = user_input[4:].split(":", 1)
-                    if len(parts) == 2:
-                        dest, filepath = parts[0].strip(), parts[1].strip()
-                        self.send_image(filepath, dest)
-                        print(f"Image envoyée à {dest}")
-                    else:
-                        print("Format: img:dest:chemin")
-                    continue
-                if user_input.lower().startswith("audio:"):
-                    parts = user_input[6:].split(":", 1)
-                    if len(parts) == 2:
-                        dest, filepath = parts[0].strip(), parts[1].strip()
-                        self.send_audio(filepath, dest)
-                        print(f"Audio envoyé à {dest}")
-                    else:
-                        print("Format: audio:dest:chemin")
-                    continue
-                if ":" in user_input:
-                    dest, content = user_input.split(":", 1)
-                    self.send(content.strip(), dest.strip())
+
+                content = input("Message: ")
+
+                if content.lower() == "disconnect":
+                    disconnect_msg = Message(MessageType.SYS_MESSAGE, emitter=self.username, receiver="", value="Disconnect")
+                    self.ws.send(disconnect_msg.to_json())
+                    self.ws.close()
+                    break
+                elif content.lower().startswith("img:"):
+                    filepath = content[4:].strip()
+                    self.send_image(filepath, dest)
+                    print(f"[image envoyée à {dest}]")
+                elif content.lower().startswith("audio:"):
+                    filepath = content[6:].strip()
+                    self.send_audio(filepath, dest)
+                    print(f"[audio envoyé à {dest}]")
+                elif content.lower().startswith("video:"):
+                    filepath = content[6:].strip()
+                    self.send_video(filepath, dest)
+                    print(f"[video envoyée à {dest}]")
                 else:
-                    self.send(user_input, "SERVER")
+                    self.send(content, dest)
+                    print(f"[envoyé à {dest}] {content}")
+
             except EOFError:
                 break
 

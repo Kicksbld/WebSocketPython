@@ -6,7 +6,8 @@ from datetime import datetime
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QScrollArea, QFrame, QFileDialog, QApplication
+    QPushButton, QScrollArea, QFrame, QFileDialog, QApplication,
+    QComboBox
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
@@ -186,18 +187,50 @@ class ChatWidget(QWidget):
 
         label_style = f"color: {COLORS['text_muted']}; font-size: 10px; font-weight: bold; letter-spacing: 1px; background: transparent;"
 
-        # Recipient input
+        # Recipient selector
         recipient_container = QVBoxLayout()
         recipient_container.setSpacing(4)
         send_to_label = QLabel("TO")
         send_to_label.setStyleSheet(label_style)
         recipient_container.addWidget(send_to_label)
 
-        self.recipient_input = QLineEdit()
-        self.recipient_input.setPlaceholderText("Recipient")
-        self.recipient_input.setFixedWidth(130)
-        self.recipient_input.setStyleSheet(input_style)
-        recipient_container.addWidget(self.recipient_input)
+        self.recipient_combo = QComboBox()
+        self.recipient_combo.setFixedWidth(150)
+        self.recipient_combo.addItem("Everyone", "ALL")
+        self.recipient_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {COLORS['bg_dark']};
+                border: 1px solid {COLORS['border_subtle']};
+                border-radius: 10px;
+                padding: 10px 16px;
+                font-size: 13px;
+                color: {COLORS['text_primary']};
+            }}
+            QComboBox:focus {{
+                border: 1px solid {COLORS['primary']};
+            }}
+            QComboBox::drop-down {{
+                border: none;
+                padding-right: 10px;
+            }}
+            QComboBox::down-arrow {{
+                image: none;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid {COLORS['text_secondary']};
+                margin-right: 5px;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {COLORS['bg_surface']};
+                border: 1px solid {COLORS['border_subtle']};
+                border-radius: 8px;
+                color: {COLORS['text_primary']};
+                selection-background-color: {COLORS['primary']};
+                selection-color: {COLORS['bg_dark']};
+                padding: 5px;
+            }}
+        """)
+        recipient_container.addWidget(self.recipient_combo)
         bottom_layout.addLayout(recipient_container)
 
         # Message input
@@ -302,12 +335,13 @@ class ChatWidget(QWidget):
         if not self.send_callback:
             return
 
-        receiver = self.recipient_input.text().strip()
+        receiver = self.recipient_combo.currentData()
         content = self.message_input.text().strip()
 
         if receiver and content:
             self.send_callback(content, receiver)
-            self.add_message(self.username, receiver, content, "text")
+            display_receiver = "Everyone" if receiver == "ALL" else receiver
+            self.add_message(self.username, display_receiver, content, "text")
             self.message_input.clear()
 
     def on_attach(self):
@@ -321,9 +355,11 @@ class ChatWidget(QWidget):
         if not file_path:
             return
 
-        receiver = self.recipient_input.text().strip()
+        receiver = self.recipient_combo.currentData()
         if not receiver:
             return
+
+        display_receiver = "Everyone" if receiver == "ALL" else receiver
 
         ext = file_path.lower().split('.')[-1]
 
@@ -332,19 +368,32 @@ class ChatWidget(QWidget):
                 self.send_image_callback(file_path, receiver)
                 with open(file_path, 'rb') as f:
                     img_data = "IMG:" + base64.b64encode(f.read()).decode('utf-8')
-                self.add_message(self.username, receiver, img_data, "image")
+                self.add_message(self.username, display_receiver, img_data, "image")
         elif ext in ['mp3', 'wav', 'ogg', 'm4a']:
             if self.send_audio_callback:
                 self.send_audio_callback(file_path, receiver)
                 with open(file_path, 'rb') as f:
                     audio_data = "AUDIO:" + base64.b64encode(f.read()).decode('utf-8')
-                self.add_message(self.username, receiver, audio_data, "audio")
+                self.add_message(self.username, display_receiver, audio_data, "audio")
         elif ext in ['mp4', 'avi', 'mov', 'mkv', 'webm']:
             if self.send_video_callback:
                 self.send_video_callback(file_path, receiver)
                 with open(file_path, 'rb') as f:
                     video_data = "VIDEO:" + base64.b64encode(f.read()).decode('utf-8')
-                self.add_message(self.username, receiver, video_data, "video")
+                self.add_message(self.username, display_receiver, video_data, "video")
+
+    def update_clients_list(self, clients):
+        """Met à jour le sélecteur de destinataires avec la liste des clients."""
+        current_selection = self.recipient_combo.currentData()
+        self.recipient_combo.clear()
+        self.recipient_combo.addItem("Everyone", "ALL")
+        for client in clients:
+            self.recipient_combo.addItem(client, client)
+
+        # Restaurer la sélection précédente si possible
+        index = self.recipient_combo.findData(current_selection)
+        if index >= 0:
+            self.recipient_combo.setCurrentIndex(index)
 
     def clear_messages(self):
         while self.messages_layout.count():

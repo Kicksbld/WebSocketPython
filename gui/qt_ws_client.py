@@ -15,6 +15,7 @@ class QtWSClient(QThread):
     connected = pyqtSignal()
     disconnected = pyqtSignal()
     error = pyqtSignal(str)
+    clients_updated = pyqtSignal(list)
 
     def __init__(self, host, port, username):
         super().__init__()
@@ -60,6 +61,12 @@ class QtWSClient(QThread):
         if received_msg.message_type == MessageType.SYS_MESSAGE and received_msg.value == "ping":
             pong_msg = Message(MessageType.SYS_MESSAGE, emitter=self.username, receiver="", value="pong")
             ws.send(pong_msg.to_json())
+            return
+
+        # Handle client list update
+        if received_msg.message_type == MessageType.RECEPTION.CLIENT_LIST:
+            clients = [c for c in received_msg.value if c != self.username]
+            self.clients_updated.emit(clients)
             return
 
         # Emit signal for UI
