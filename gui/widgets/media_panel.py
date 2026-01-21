@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QFrame
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QPixmap, QFont
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtMultimediaWidgets import QVideoWidget
 
 from ..styles import COLORS, FONT_FAMILY
 
@@ -20,7 +21,9 @@ class MediaPanel(QWidget):
         super().__init__()
         self.media_player = None
         self.temp_audio_file = None
+        self.temp_video_file = None
         self.is_playing = False
+        self.current_media_type = None  # "audio" or "video"
         self.init_ui()
 
     def init_ui(self):
@@ -146,12 +149,56 @@ class MediaPanel(QWidget):
         self.audio_widget.hide()
         self.content_layout.addWidget(self.audio_widget)
 
+        # Video player widget
+        self.video_widget = QWidget()
+        self.video_widget.setStyleSheet("background: transparent;")
+        video_layout = QVBoxLayout(self.video_widget)
+        video_layout.setAlignment(Qt.AlignCenter)
+        video_layout.setSpacing(15)
+
+        self.video_display = QVideoWidget()
+        self.video_display.setFixedSize(250, 180)
+        self.video_display.setStyleSheet(f"""
+            QVideoWidget {{
+                background-color: {COLORS['bg_dark']};
+                border: 2px solid {COLORS['border_subtle']};
+                border-radius: 12px;
+            }}
+        """)
+        video_layout.addWidget(self.video_display, alignment=Qt.AlignCenter)
+
+        self.video_play_btn = QPushButton("PLAY")
+        self.video_play_btn.setFont(QFont(FONT_FAMILY, 11, QFont.Bold))
+        self.video_play_btn.setStyleSheet(f"""
+            QPushButton {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {COLORS['secondary']}, stop:1 {COLORS['accent_purple']});
+                color: {COLORS['bg_dark']};
+                border: none;
+                border-radius: 25px;
+                padding: 15px 35px;
+                font-size: 12px;
+                font-weight: bold;
+                letter-spacing: 1px;
+            }}
+            QPushButton:hover {{
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {COLORS['accent_purple']}, stop:1 {COLORS['primary']});
+            }}
+        """)
+        self.video_play_btn.clicked.connect(self.toggle_video)
+        video_layout.addWidget(self.video_play_btn, alignment=Qt.AlignCenter)
+
+        self.video_widget.hide()
+        self.content_layout.addWidget(self.video_widget)
+
         layout.addWidget(self.content_area)
         layout.addStretch()
 
     def show_image(self, base64_data):
         self.placeholder.hide()
         self.audio_widget.hide()
+        self.video_widget.hide()
         self.image_label.show()
 
         if base64_data.startswith("IMG:"):
@@ -166,7 +213,9 @@ class MediaPanel(QWidget):
     def show_audio(self, base64_data):
         self.placeholder.hide()
         self.image_label.hide()
+        self.video_widget.hide()
         self.audio_widget.show()
+        self.current_media_type = "audio"
 
         if base64_data.startswith("AUDIO:"):
             base64_data = base64_data[6:]
@@ -199,5 +248,47 @@ class MediaPanel(QWidget):
         else:
             self.media_player.play()
             self.play_pause_btn.setText("PAUSE")
+
+        self.is_playing = not self.is_playing
+
+    def show_video(self, base64_data):
+        self.placeholder.hide()
+        self.image_label.hide()
+        self.audio_widget.hide()
+        self.video_widget.show()
+        self.current_media_type = "video"
+
+        if base64_data.startswith("VIDEO:"):
+            base64_data = base64_data[6:]
+
+        video_bytes = base64.b64decode(base64_data)
+
+        if self.temp_video_file:
+            try:
+                os.remove(self.temp_video_file)
+            except:
+                pass
+
+        fd, self.temp_video_file = tempfile.mkstemp(suffix=".mp4")
+        with os.fdopen(fd, 'wb') as f:
+            f.write(video_bytes)
+
+        self.media_player = QMediaPlayer()
+        self.media_player.setVideoOutput(self.video_display)
+        self.media_player.setMedia(QMediaContent(QUrl.fromLocalFile(self.temp_video_file)))
+
+        self.is_playing = False
+        self.video_play_btn.setText("PLAY")
+
+    def toggle_video(self):
+        if not self.media_player:
+            return
+
+        if self.is_playing:
+            self.media_player.pause()
+            self.video_play_btn.setText("PLAY")
+        else:
+            self.media_player.play()
+            self.video_play_btn.setText("PAUSE")
 
         self.is_playing = not self.is_playing

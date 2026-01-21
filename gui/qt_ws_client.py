@@ -66,7 +66,7 @@ class QtWSClient(QThread):
         self.message_received.emit(received_msg)
 
         # Send ack for RECEPTION messages (same as WSClient)
-        if received_msg.message_type in [MessageType.RECEPTION.TEXT, MessageType.RECEPTION.IMAGE, MessageType.RECEPTION.AUDIO]:
+        if received_msg.message_type in [MessageType.RECEPTION.TEXT, MessageType.RECEPTION.IMAGE, MessageType.RECEPTION.AUDIO, MessageType.RECEPTION.VIDEO]:
             ack_msg = Message(MessageType.SYS_MESSAGE, emitter=self.username, receiver="", value="MESSAGE OK")
             ws.send(ack_msg.to_json())
 
@@ -91,6 +91,11 @@ class QtWSClient(QThread):
         """Reuse WSClient.send_audio()"""
         if self.client and self.client.ws:
             self.client.send_audio(filepath, dest)
+
+    def send_video(self, filepath, dest):
+        """Reuse WSClient.send_video()"""
+        if self.client and self.client.ws:
+            self.client.send_video(filepath, dest)
 
     def disconnect(self):
         """Disconnect - same logic as WSClient input_loop disconnect."""

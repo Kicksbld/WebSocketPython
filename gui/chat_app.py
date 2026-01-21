@@ -48,6 +48,7 @@ class ChatApp(QMainWindow):
         self.chat_widget.send_callback = self.send_text
         self.chat_widget.send_image_callback = self.send_image
         self.chat_widget.send_audio_callback = self.send_audio
+        self.chat_widget.send_video_callback = self.send_video
 
         self.ws_thread.start()
 
@@ -74,6 +75,8 @@ class ChatApp(QMainWindow):
             self.chat_widget.add_message(msg.emitter, msg.receiver, msg.value, "image")
         elif msg.message_type in [MessageType.RECEPTION.AUDIO]:
             self.chat_widget.add_message(msg.emitter, msg.receiver, msg.value, "audio")
+        elif msg.message_type in [MessageType.RECEPTION.VIDEO]:
+            self.chat_widget.add_message(msg.emitter, msg.receiver, msg.value, "video")
         elif msg.message_type == MessageType.SYS_MESSAGE:
             pass
         elif msg.message_type == MessageType.WARNING:
@@ -96,3 +99,8 @@ class ChatApp(QMainWindow):
         """Reuse WSClient.send_audio() via QtWSClient"""
         if self.ws_thread:
             self.ws_thread.send_audio(filepath, receiver)
+
+    def send_video(self, filepath, receiver):
+        """Reuse WSClient.send_video() via QtWSClient"""
+        if self.ws_thread:
+            self.ws_thread.send_video(filepath, receiver)

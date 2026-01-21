@@ -27,6 +27,7 @@ class ChatWidget(QWidget):
         self.send_callback = None
         self.send_image_callback = None
         self.send_audio_callback = None
+        self.send_video_callback = None
         self.init_ui()
 
     def init_ui(self):
@@ -294,6 +295,8 @@ class ChatWidget(QWidget):
             self.media_panel.show_image(content)
         elif msg_type == "audio":
             self.media_panel.show_audio(content)
+        elif msg_type == "video":
+            self.media_panel.show_video(content)
 
     def on_send(self):
         if not self.send_callback:
@@ -312,7 +315,7 @@ class ChatWidget(QWidget):
             self,
             "Select media file",
             "",
-            "Images (*.png *.jpg *.jpeg *.gif *.bmp);;Audio (*.mp3 *.wav *.ogg *.m4a);;All Files (*)"
+            "Images (*.png *.jpg *.jpeg *.gif *.bmp);;Audio (*.mp3 *.wav *.ogg *.m4a);;Video (*.mp4 *.avi *.mov *.mkv *.webm);;All Files (*)"
         )
 
         if not file_path:
@@ -336,6 +339,12 @@ class ChatWidget(QWidget):
                 with open(file_path, 'rb') as f:
                     audio_data = "AUDIO:" + base64.b64encode(f.read()).decode('utf-8')
                 self.add_message(self.username, receiver, audio_data, "audio")
+        elif ext in ['mp4', 'avi', 'mov', 'mkv', 'webm']:
+            if self.send_video_callback:
+                self.send_video_callback(file_path, receiver)
+                with open(file_path, 'rb') as f:
+                    video_data = "VIDEO:" + base64.b64encode(f.read()).decode('utf-8')
+                self.add_message(self.username, receiver, video_data, "video")
 
     def clear_messages(self):
         while self.messages_layout.count():

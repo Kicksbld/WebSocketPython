@@ -4,11 +4,13 @@ class ENVOI_TYPE:
     TEXT = "ENVOI_TEXT"
     IMAGE = "ENVOI_IMAGE"
     AUDIO = "ENVOI_AUDIO"
+    VIDEO = "ENVOI_VIDEO"
 
 class RECEPTION_TYPE:
     TEXT = "RECEPTION_TEXT"
     IMAGE = "RECEPTION_IMAGE"
     AUDIO = "RECEPTION_AUDIO"
+    VIDEO = "RECEPTION_VIDEO"
 
 class MessageType:
     DECLARATION = "DECLARATION"
@@ -39,6 +41,10 @@ class Message:
     @staticmethod
     def reception_audio(emitter, value, receiver):
         return Message(MessageType.RECEPTION.AUDIO, value, emitter, receiver)
+
+    @staticmethod
+    def reception_video(emitter, value, receiver):
+        return Message(MessageType.RECEPTION.VIDEO, value, emitter, receiver)
 
     @staticmethod
     def warning(emitter, value, receiver):

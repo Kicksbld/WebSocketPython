@@ -32,7 +32,7 @@ class WSClient:
         print(f"[{self.username}] > ", end="", flush=True)
 
         # Accusé de réception pour les messages RECEPTION
-        if received_msg.message_type in [MessageType.RECEPTION.TEXT, MessageType.RECEPTION.IMAGE, MessageType.RECEPTION.AUDIO]:
+        if received_msg.message_type in [MessageType.RECEPTION.TEXT, MessageType.RECEPTION.IMAGE, MessageType.RECEPTION.AUDIO, MessageType.RECEPTION.VIDEO]:
             ack_msg = Message(MessageType.SYS_MESSAGE, emitter=self.username, receiver="", value="MESSAGE OK")
             ws.send(ack_msg.to_json())
 
@@ -111,6 +111,13 @@ class WSClient:
             audio_base64 = base64.b64encode(f.read()).decode("utf-8")
         value = f"AUDIO:{audio_base64}"
         message = Message(MessageType.ENVOI.AUDIO, emitter=self.username, receiver=dest, value=value)
+        self.ws.send(message.to_json())
+
+    def send_video(self, filepath, dest):
+        with open(filepath, "rb") as f:
+            video_base64 = base64.b64encode(f.read()).decode("utf-8")
+        value = f"VIDEO:{video_base64}"
+        message = Message(MessageType.ENVOI.VIDEO, emitter=self.username, receiver=dest, value=value)
         self.ws.send(message.to_json())
 
     @staticmethod

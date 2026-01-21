@@ -60,5 +60,9 @@ class MessageBubble(QFrame):
             content_label = QLabel("Audio message")
             content_label.setStyleSheet(f"color: {COLORS['secondary']}; font-size: 13px; background: transparent;")
             content_layout.addWidget(content_label)
+        elif msg_type == "video":
+            content_label = QLabel("Video attached")
+            content_label.setStyleSheet(f"color: {COLORS['accent_purple']}; font-size: 13px; background: transparent;")
+            content_layout.addWidget(content_label)
 
         layout.addWidget(content_frame)
