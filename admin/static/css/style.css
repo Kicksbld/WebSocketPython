@@ -534,6 +534,44 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   ENVIRONMENT SELECT
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.env-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 0.5px;
+    outline: none;
+}
+
+.env-select:hover {
+    border-color: var(--primary);
+}
+
+.env-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 10px rgba(0, 245, 212, 0.2);
+}
+
+.env-select option {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    padding: 0.5rem;
+}
+
+.env-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    EMPTY STATES
    ═══════════════════════════════════════════════════════════════════════════ */
 

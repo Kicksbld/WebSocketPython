@@ -9,22 +9,24 @@ from Context import Context
 
 app = Flask(__name__)
 
-# Get WebSocket server config
-ctx = Context.prod()
+# Get WebSocket server configs
+ctx_dev = Context.dev()
+ctx_prod = Context.prod()
 
 @app.route('/')
 def index():
-    return render_template('index.html', ws_url=ctx.url())
+    return render_template('index.html',
+                          ws_url_dev=ctx_dev.url(),
+                          ws_url_prod=ctx_prod.url())
 
 @app.route('/api/config')
 def get_config():
     return jsonify({
-        'ws_url': ctx.url(),
-        'host': ctx.host,
-        'port': ctx.port
+        'dev': {'ws_url': ctx_dev.url(), 'host': ctx_dev.host, 'port': ctx_dev.port},
+        'prod': {'ws_url': ctx_prod.url(), 'host': ctx_prod.host, 'port': ctx_prod.port}
     })
 
 if __name__ == '__main__':
     print(f"Admin Dashboard running at http://127.0.0.1:5000")
-    print(f"WebSocket server expected at {ctx.url()}")
+    print(f"Dev server: {ctx_dev.url()} | Prod server: {ctx_prod.url()}")
     app.run(debug=True, port=5000)

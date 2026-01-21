@@ -277,8 +277,9 @@ class NetworkGraph {
 
 // Admin client class
 class AdminClient {
-    constructor(wsUrl) {
-        this.wsUrl = wsUrl;
+    constructor(wsUrls) {
+        this.wsUrls = wsUrls;
+        this.currentEnv = 'dev';
         this.ws = null;
         this.username = 'ADMIN_' + Math.random().toString(36).substring(2, 8);
         this.clients = []; // Array of {username, connected_at, last_activity, status}
@@ -309,12 +310,18 @@ class AdminClient {
         this.connectBtn = document.getElementById('connectBtn');
         this.disconnectBtn = document.getElementById('disconnectBtn');
         this.clearLogBtn = document.getElementById('clearLog');
+
+        // Environment selector
+        this.envSelect = document.getElementById('envSelect');
     }
 
     initEventListeners() {
         this.connectBtn.addEventListener('click', () => this.connect());
         this.disconnectBtn.addEventListener('click', () => this.disconnect());
         this.clearLogBtn.addEventListener('click', () => this.clearLog());
+        this.envSelect.addEventListener('change', (e) => {
+            this.currentEnv = e.target.value;
+        });
     }
 
     initNetworkGraph() {
@@ -330,7 +337,8 @@ class AdminClient {
         }
 
         try {
-            this.ws = new WebSocket(this.wsUrl);
+            const wsUrl = this.wsUrls[this.currentEnv];
+            this.ws = new WebSocket(wsUrl);
 
             this.ws.onopen = () => this.onOpen();
             this.ws.onclose = () => this.onClose();
@@ -611,11 +619,13 @@ class AdminClient {
             this.statusText.textContent = 'En ligne';
             this.connectBtn.disabled = true;
             this.disconnectBtn.disabled = false;
+            this.envSelect.disabled = true;
         } else {
             this.statusDot.classList.remove('connected');
             this.statusText.textContent = 'Hors ligne';
             this.connectBtn.disabled = false;
             this.disconnectBtn.disabled = true;
+            this.envSelect.disabled = false;
         }
     }
 
@@ -638,5 +648,5 @@ class AdminClient {
 
 // Initialize admin client when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    window.adminClient = new AdminClient(WS_URL);
+    window.adminClient = new AdminClient(WS_URLS);
 });

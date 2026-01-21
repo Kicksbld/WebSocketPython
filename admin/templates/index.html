@@ -15,6 +15,10 @@
                 <span class="header-subtitle">Supervision en temps réel</span>
             </div>
             <div class="header-controls">
+                <select class="env-select" id="envSelect">
+                    <option value="dev">Dev (localhost)</option>
+                    <option value="prod">Prod (192.168.4.230)</option>
+                </select>
                 <button class="btn btn-success" id="connectBtn">Connexion</button>
                 <button class="btn btn-danger" id="disconnectBtn" disabled>Déconnexion</button>
             </div>
@@ -92,7 +96,10 @@
     <!-- D3.js -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
-        const WS_URL = "{{ ws_url }}";
+        const WS_URLS = {
+            dev: "{{ ws_url_dev }}",
+            prod: "{{ ws_url_prod }}"
+        };
     </script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
