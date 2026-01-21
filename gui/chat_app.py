@@ -70,6 +70,10 @@ class ChatApp(QMainWindow):
             self.ws_thread.disconnect()
 
     def on_message(self, msg):
+        # Ignorer les messages qu'on a envoyés soi-même (évite les doublons)
+        if msg.emitter == self.ws_thread.username:
+            return
+
         if msg.message_type in [MessageType.RECEPTION.TEXT]:
             self.chat_widget.add_message(msg.emitter, msg.receiver, msg.value, "text")
         elif msg.message_type in [MessageType.RECEPTION.IMAGE]:
