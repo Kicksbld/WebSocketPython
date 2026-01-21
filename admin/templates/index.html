@@ -3,67 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - WebSocket Server</title>
+    <title>Tableau de bord - WebSocket Server</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="dashboard">
         <!-- Header -->
         <header class="header">
-            <h1>Admin Dashboard</h1>
+            <div class="header-left">
+                <h1>Tableau de bord</h1>
+                <span class="header-subtitle">Supervision en temps réel</span>
+            </div>
+            <div class="header-controls">
+                <button class="btn btn-success" id="connectBtn">Connexion</button>
+                <button class="btn btn-danger" id="disconnectBtn" disabled>Déconnexion</button>
+            </div>
             <div class="connection-status">
                 <span class="status-dot" id="statusDot"></span>
-                <span id="statusText">Disconnected</span>
+                <span id="statusText">Hors ligne</span>
             </div>
         </header>
 
         <!-- Accent Line -->
         <div class="accent-line"></div>
 
-        <!-- Main Content -->
+        <!-- Main Content - Graph first -->
         <main class="main-content">
-            <!-- Left Section: Logs + Graph -->
-            <section class="left-section">
-                <!-- Top: Communication Logs -->
-                <div class="panel log-panel">
-                    <div class="panel-header">
-                        <h2>Logs des personnes qui communiquent</h2>
-                        <button class="btn btn-secondary" id="clearLog">Clear</button>
-                    </div>
-                    <div class="communication-log" id="communicationLog">
-                        <!-- Log entries: [timestamp] Emitter -> Receiver -->
-                    </div>
-                </div>
-
-                <!-- Bottom: D3.js Graph -->
+            <!-- Left: Network Graph (primary focus) -->
+            <section class="graph-section">
                 <div class="panel graph-panel">
                     <div class="panel-header">
-                        <h2>Graphe visuel des communications</h2>
-                        <span class="panel-subtitle">Toutes les communications passent par le serveur</span>
+                        <div class="panel-title-group">
+                            <h2>Réseau en direct</h2>
+                            <span class="panel-subtitle">Glissez les nœuds pour réorganiser</span>
+                        </div>
+                        <div class="graph-legend">
+                            <span class="legend-item">
+                                <span class="legend-dot server"></span>
+                                Serveur
+                            </span>
+                            <span class="legend-item">
+                                <span class="legend-dot client"></span>
+                                Client
+                            </span>
+                        </div>
                     </div>
                     <div id="networkGraph"></div>
                 </div>
             </section>
 
-            <!-- Right Section: Clients Panel -->
-            <aside class="right-section">
+            <!-- Right: Sidebar with clients + logs -->
+            <aside class="sidebar">
+                <!-- Connected Clients -->
                 <div class="panel clients-panel">
-                    <h2>Clients Connectés</h2>
-                    <div class="client-count">
-                        <span id="clientCount">0</span> client(s) en ligne
+                    <div class="panel-header">
+                        <h2>Utilisateurs</h2>
+                        <span class="client-badge" id="clientCount">0</span>
                     </div>
                     <div class="client-cards" id="clientCards">
-                        <!-- Client cards with status and connection time -->
+                        <div class="empty-state">
+                            <span class="empty-icon">👥</span>
+                            <span>Aucun utilisateur connecté</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Communication Logs -->
+                <div class="panel log-panel">
+                    <div class="panel-header">
+                        <h2>Activité</h2>
+                        <button class="btn btn-icon" id="clearLog" title="Effacer l'historique">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="communication-log" id="communicationLog">
+                        <div class="empty-state">
+                            <span class="empty-icon">📡</span>
+                            <span>En attente de messages...</span>
+                        </div>
                     </div>
                 </div>
             </aside>
         </main>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <button class="btn btn-success" id="connectBtn">Connect</button>
-            <button class="btn btn-danger" id="disconnectBtn" disabled>Disconnect</button>
-        </footer>
     </div>
 
     <!-- D3.js -->

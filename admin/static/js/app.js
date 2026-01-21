@@ -521,6 +521,12 @@ class AdminClient {
     }
 
     renderCommunicationLog(entry) {
+        // Remove empty state if present
+        const emptyState = this.communicationLog.querySelector('.empty-state');
+        if (emptyState) {
+            emptyState.remove();
+        }
+
         const div = document.createElement('div');
         div.className = 'comm-log-entry';
 
@@ -530,12 +536,14 @@ class AdminClient {
             second: '2-digit'
         });
 
+        const receiverDisplay = entry.receiver === 'ALL' ? 'Tous' : this.escapeHtml(entry.receiver);
+
         div.innerHTML = `
             <span class="timestamp">${time}</span>
             <span class="route">
                 <span class="emitter">${this.escapeHtml(entry.emitter)}</span>
-                <span class="arrow">&rarr;</span>
-                <span class="receiver">${this.escapeHtml(entry.receiver)}</span>
+                <span class="arrow">→</span>
+                <span class="receiver">${receiverDisplay}</span>
             </span>
         `;
 
@@ -551,21 +559,26 @@ class AdminClient {
         this.clientCount.textContent = filteredClients.length;
 
         if (filteredClients.length === 0) {
-            this.clientCards.innerHTML = '<div class="empty-state">Aucun client connecté</div>';
+            this.clientCards.innerHTML = `
+                <div class="empty-state">
+                    <span class="empty-icon">👥</span>
+                    <span>Aucun utilisateur connecté</span>
+                </div>
+            `;
             return;
         }
 
         this.clientCards.innerHTML = filteredClients.map(client => {
             const connectedTime = this.formatConnectionTime(client.connected_at);
             const statusClass = client.status === 'active' ? 'active' : 'inactive';
-            const statusText = client.status === 'active' ? 'Actif' : 'Inactif';
+            const statusText = client.status === 'active' ? 'En ligne' : 'Inactif';
 
             return `
                 <div class="client-card">
                     <div class="avatar">${client.username[0].toUpperCase()}</div>
                     <div class="info">
                         <div class="name">${this.escapeHtml(client.username)}</div>
-                        <div class="connection-time">Connecté ${connectedTime}</div>
+                        <div class="connection-time">${connectedTime}</div>
                     </div>
                     <span class="status ${statusClass}">${statusText}</span>
                 </div>
@@ -574,16 +587,16 @@ class AdminClient {
     }
 
     formatConnectionTime(isoString) {
-        if (!isoString) return 'à l\'instant';
+        if (!isoString) return 'À l\'instant';
 
         const connected = new Date(isoString);
         const now = new Date();
         const diff = Math.floor((now - connected) / 1000); // seconds
 
-        if (diff < 60) return 'à l\'instant';
-        if (diff < 3600) return `il y a ${Math.floor(diff / 60)}m`;
-        if (diff < 86400) return `il y a ${Math.floor(diff / 3600)}h`;
-        return `le ${connected.toLocaleDateString('fr-FR')}`;
+        if (diff < 60) return 'À l\'instant';
+        if (diff < 3600) return `Depuis ${Math.floor(diff / 60)} min`;
+        if (diff < 86400) return `Depuis ${Math.floor(diff / 3600)}h`;
+        return `Le ${connected.toLocaleDateString('fr-FR')}`;
     }
 
     send(data) {
@@ -595,19 +608,24 @@ class AdminClient {
     updateConnectionStatus(connected) {
         if (connected) {
             this.statusDot.classList.add('connected');
-            this.statusText.textContent = 'Connected';
+            this.statusText.textContent = 'En ligne';
             this.connectBtn.disabled = true;
             this.disconnectBtn.disabled = false;
         } else {
             this.statusDot.classList.remove('connected');
-            this.statusText.textContent = 'Disconnected';
+            this.statusText.textContent = 'Hors ligne';
             this.connectBtn.disabled = false;
             this.disconnectBtn.disabled = true;
         }
     }
 
     clearLog() {
-        this.communicationLog.innerHTML = '';
+        this.communicationLog.innerHTML = `
+            <div class="empty-state">
+                <span class="empty-icon">📡</span>
+                <span>En attente de messages...</span>
+            </div>
+        `;
         this.communicationLogs = [];
     }
 
