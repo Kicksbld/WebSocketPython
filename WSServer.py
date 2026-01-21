@@ -1,6 +1,7 @@
 from websocket_server import WebsocketServer
 import threading
 import base64
+from datetime import datetime
 
 from Context import Context
 from Message import Message, MessageType
@@ -16,6 +17,8 @@ class WSServer:
         self.server.set_fn_message_received(self.on_message_received)
 
         self.clients = {}
+        self.client_metadata = {}  # {username: {connected_at, last_activity}}
+        self.admin_clients = []    # List of admin websockets
         self.running = False
 
     def on_new_client(self, client, server):
@@ -27,10 +30,24 @@ class WSServer:
 
     def on_client_left(self, client, server):
         print(f"\n[-] Client déconnecté: id={client['id']}")
+        disconnected_username = None
+
         for name, c in list(self.clients.items()):
             if c['id'] == client['id']:
+                disconnected_username = name
                 del self.clients[name]
-        
+                # Nettoie les métadonnées
+                if name in self.client_metadata:
+                    del self.client_metadata[name]
+                break
+
+        # Nettoie la liste des admins si c'était un admin
+        self.admin_clients = [a for a in self.admin_clients if a.get('id') != client.get('id')]
+
+        # Notifie les admins de la déconnexion
+        if disconnected_username and not disconnected_username.startswith("ADMIN"):
+            self.notify_admins_client_disconnected(disconnected_username)
+
         self.broadcast_clients_list()
 
         print("[SERVER] > ", end="", flush=True)
@@ -49,14 +66,86 @@ class WSServer:
         for client in self.clients.values():
             self.server.send_message(client, msg)
 
+    def notify_admins_routing(self, emitter, receiver, msg_type):
+        """Envoie une notification de routage à tous les admins (sans contenu)"""
+        log_data = {
+            'emitter': emitter,
+            'receiver': receiver,
+            'message_type': msg_type,
+            'timestamp': datetime.now().isoformat()
+        }
+        msg = Message(MessageType.ADMIN.ROUTING_LOG, emitter="SERVER", receiver="ADMIN", value=log_data)
+        for admin in self.admin_clients:
+            try:
+                self.server.send_message(admin, msg.to_json())
+            except:
+                pass
+
+    def notify_admins_client_connected(self, username):
+        """Notifie les admins d'une nouvelle connexion"""
+        event_data = {
+            'username': username,
+            'connected_at': self.client_metadata[username]['connected_at'],
+            'timestamp': datetime.now().isoformat()
+        }
+        msg = Message(MessageType.ADMIN.CLIENT_CONNECTED, emitter="SERVER", receiver="ADMIN", value=event_data)
+        for admin in self.admin_clients:
+            try:
+                self.server.send_message(admin, msg.to_json())
+            except:
+                pass
+
+    def notify_admins_client_disconnected(self, username):
+        """Notifie les admins d'une déconnexion"""
+        event_data = {
+            'username': username,
+            'timestamp': datetime.now().isoformat()
+        }
+        msg = Message(MessageType.ADMIN.CLIENT_DISCONNECTED, emitter="SERVER", receiver="ADMIN", value=event_data)
+        for admin in self.admin_clients:
+            try:
+                self.server.send_message(admin, msg.to_json())
+            except:
+                pass
+
+    def send_admin_client_list(self, admin_client):
+        """Envoie la liste complète des clients avec métadonnées à un admin"""
+        clients_data = []
+        for username, metadata in self.client_metadata.items():
+            clients_data.append({
+                'username': username,
+                'connected_at': metadata['connected_at'],
+                'last_activity': metadata['last_activity'],
+                'status': 'active'
+            })
+        msg = Message(MessageType.ADMIN.CLIENT_LIST_FULL, emitter="SERVER", receiver="ADMIN", value=clients_data)
+        self.server.send_message(admin_client, msg.to_json())
+
     def on_message_received(self, client, server, message):
         print(f"\n[message reçu] {message}")
         received_msg = Message.from_json(message)
         if received_msg.message_type == MessageType.DECLARATION:
-            response = Message(MessageType.RECEPTION.TEXT, emitter="SERVER", receiver=received_msg.emitter, value=f"Déclaration reçue de {received_msg.emitter}")
+            username = received_msg.emitter
+
+            # Détection des clients admin
+            if username == "ADMIN" or username.startswith("ADMIN_"):
+                self.admin_clients.append(client)
+                print(f"[info] Admin '{username}' connecté")
+                # Envoie la liste complète des clients à l'admin
+                self.send_admin_client_list(client)
+            else:
+                # Client régulier - stocke les métadonnées
+                self.client_metadata[username] = {
+                    'connected_at': datetime.now().isoformat(),
+                    'last_activity': datetime.now().isoformat()
+                }
+                # Notifie tous les admins de la nouvelle connexion
+                self.notify_admins_client_connected(username)
+
+            response = Message(MessageType.RECEPTION.TEXT, emitter="SERVER", receiver=username, value=f"Déclaration reçue de {username}")
             server.send_message(client, response.to_json())
-            self.clients[received_msg.emitter] = client
-            print(f"[info] Client '{received_msg.emitter}' enregistré")
+            self.clients[username] = client
+            print(f"[info] Client '{username}' enregistré")
             self.broadcast_clients_list()
         
         elif received_msg.message_type == MessageType.ENVOI.CLIENT_LIST:
@@ -66,6 +155,22 @@ class WSServer:
             print(f"CLIENTS = {users_list}")
 
         elif received_msg.message_type in [MessageType.ENVOI.TEXT, MessageType.ENVOI.IMAGE, MessageType.ENVOI.AUDIO, MessageType.ENVOI.VIDEO]:
+            # Met à jour last_activity pour l'émetteur
+            if received_msg.emitter in self.client_metadata:
+                self.client_metadata[received_msg.emitter]['last_activity'] = datetime.now().isoformat()
+
+            # Détermine le type de message pour le log
+            msg_type_simple = 'TEXT'
+            if received_msg.message_type == MessageType.ENVOI.IMAGE:
+                msg_type_simple = 'IMAGE'
+            elif received_msg.message_type == MessageType.ENVOI.AUDIO:
+                msg_type_simple = 'AUDIO'
+            elif received_msg.message_type == MessageType.ENVOI.VIDEO:
+                msg_type_simple = 'VIDEO'
+
+            # Notifie les admins du routage (sans contenu)
+            self.notify_admins_routing(received_msg.emitter, received_msg.receiver, msg_type_simple)
+
             if received_msg.receiver == "SERVER":
                 print(f"[{received_msg.emitter}] {received_msg.value}")
             if received_msg.receiver == "SERVER" and received_msg.message_type == MessageType.SYS_MESSAGE:

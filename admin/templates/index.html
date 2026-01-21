@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - WebSocket Server</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <header class="header">
+            <h1>Admin Dashboard</h1>
+            <div class="connection-status">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </header>
+
+        <!-- Accent Line -->
+        <div class="accent-line"></div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Section: Logs + Graph -->
+            <section class="left-section">
+                <!-- Top: Communication Logs -->
+                <div class="panel log-panel">
+                    <div class="panel-header">
+                        <h2>Logs des personnes qui communiquent</h2>
+                        <button class="btn btn-secondary" id="clearLog">Clear</button>
+                    </div>
+                    <div class="communication-log" id="communicationLog">
+                        <!-- Log entries: [timestamp] Emitter -> Receiver -->
+                    </div>
+                </div>
+
+                <!-- Bottom: D3.js Graph -->
+                <div class="panel graph-panel">
+                    <div class="panel-header">
+                        <h2>Graphe visuel des communications</h2>
+                        <span class="panel-subtitle">Toutes les communications passent par le serveur</span>
+                    </div>
+                    <div id="networkGraph"></div>
+                </div>
+            </section>
+
+            <!-- Right Section: Clients Panel -->
+            <aside class="right-section">
+                <div class="panel clients-panel">
+                    <h2>Clients Connectés</h2>
+                    <div class="client-count">
+                        <span id="clientCount">0</span> client(s) en ligne
+                    </div>
+                    <div class="client-cards" id="clientCards">
+                        <!-- Client cards with status and connection time -->
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <button class="btn btn-success" id="connectBtn">Connect</button>
+            <button class="btn btn-danger" id="disconnectBtn" disabled>Disconnect</button>
+        </footer>
+    </div>
+
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        const WS_URL = "{{ ws_url }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
