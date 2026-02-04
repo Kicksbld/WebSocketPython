@@ -154,7 +154,7 @@ class WSServer:
             server.send_message(client, response.to_json())
             print(f"CLIENTS = {users_list}")
 
-        elif received_msg.message_type in [MessageType.ENVOI.TEXT, MessageType.ENVOI.IMAGE, MessageType.ENVOI.AUDIO, MessageType.ENVOI.VIDEO]:
+        elif received_msg.message_type in [MessageType.ENVOI.TEXT, MessageType.ENVOI.IMAGE, MessageType.ENVOI.AUDIO, MessageType.ENVOI.VIDEO, MessageType.ENVOI.SENSOR]:
             # Met à jour last_activity pour l'émetteur
             if received_msg.emitter in self.client_metadata:
                 self.client_metadata[received_msg.emitter]['last_activity'] = datetime.now().isoformat()
@@ -167,6 +167,8 @@ class WSServer:
                 msg_type_simple = 'AUDIO'
             elif received_msg.message_type == MessageType.ENVOI.VIDEO:
                 msg_type_simple = 'VIDEO'
+            elif received_msg.message_type == MessageType.ENVOI.SENSOR:
+                msg_type_simple = 'SENSOR'
 
             # Notifie les admins du routage (sans contenu)
             self.notify_admins_routing(received_msg.emitter, received_msg.receiver, msg_type_simple)
@@ -184,9 +186,11 @@ class WSServer:
                     reception_type = MessageType.RECEPTION.AUDIO
                 elif received_msg.message_type == MessageType.ENVOI.VIDEO:
                     reception_type = MessageType.RECEPTION.VIDEO
-                
+                elif received_msg.message_type == MessageType.ENVOI.SENSOR:
+                    reception_type = MessageType.RECEPTION.SENSOR
+
                 for client in self.clients.values():
-                    message = Message(reception_type, emitter=received_msg.emitter, receiver="ALL", value=received_msg.value)
+                    message = Message(reception_type, emitter=received_msg.emitter, receiver="ALL", value=received_msg.value, sensor_id=received_msg.sensor_id)
                     self.server.send_message(client, message.to_json())
             else:
                 receiver_client = self.clients.get(received_msg.receiver, None)
@@ -198,7 +202,9 @@ class WSServer:
                         reception_type = MessageType.RECEPTION.AUDIO
                     elif received_msg.message_type == MessageType.ENVOI.VIDEO:
                         reception_type = MessageType.RECEPTION.VIDEO
-                    forward_msg = Message(reception_type, emitter=received_msg.emitter, receiver=received_msg.receiver, value=received_msg.value)
+                    elif received_msg.message_type == MessageType.ENVOI.SENSOR:
+                        reception_type = MessageType.RECEPTION.SENSOR
+                    forward_msg = Message(reception_type, emitter=received_msg.emitter, receiver=received_msg.receiver, value=received_msg.value, sensor_id=received_msg.sensor_id)
                     server.send_message(receiver_client, forward_msg.to_json())
                 else:
                     error_msg = Message(MessageType.RECEPTION.TEXT, emitter="SERVER", receiver=received_msg.emitter, value=f"Erreur: destinataire {received_msg.receiver} non trouvé.")
